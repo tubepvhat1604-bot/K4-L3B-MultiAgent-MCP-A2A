@@ -45,7 +45,12 @@ day09 --help
 COMPETITION_API_URL=http://127.0.0.1:8081
 COMPETITION_TEAM_API_KEY=sk-team-your_key
 MCP_ENDPOINT=http://127.0.0.1:8001/mcp
+CLOUDFLARE_API_TOKEN=your_cloudflare_workers_ai_token
+CLOUDFLARE_ACCOUNT_ID=your_cloudflare_account_id
+CLOUDFLARE_MODEL=@cf/meta/llama-3.1-8b-instruct-fp8
 ```
+
+The workflow uses Cloudflare Workers AI when `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` are configured. It defaults to `@cf/meta/llama-3.1-8b-instruct-fp8`; API calls may incur usage charges. Alternatively, omit the Cloudflare settings and configure `OPENROUTER_API_KEY`, `QWEN_API_BASE_URL`, and `QWEN_MODEL` to use OpenRouter.
 
 ## 3. Tải input
 

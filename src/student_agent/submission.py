@@ -86,13 +86,15 @@ def validate_artifacts(
     return outputs, normalized_lines
 
 
-def package_submission(root: Path, destination: Path) -> Path:
+def package_submission(
+    root: Path, destination: Path, *, artifacts_root: Path | None = None,
+) -> Path:
     from .cases import load_case_set
 
     root = root.resolve()
     case_set = load_case_set(root)
     contracts = Contracts(root / "contracts" / "schemas")
-    outputs, trace_lines = validate_artifacts(root, case_set, contracts)
+    outputs, trace_lines = validate_artifacts(artifacts_root or root, case_set, contracts)
     manifest = build_manifest(case_set)
     contracts.validate_manifest(manifest)
 

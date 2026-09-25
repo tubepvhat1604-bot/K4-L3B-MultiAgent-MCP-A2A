@@ -14,7 +14,7 @@ Coordinator ──task_assigned──► Policy agent ────────�
    │
    ├──► Entity agent ─────────► get_order (chỉ candidate đúng định dạng 32-hex)
    ├──► Customer agent ───────► get_customer_history
-   ├──► Order agent ──────────► get_order_items (+ get_sellers nếu issue seller)
+   ├──► Order agent ──────────► get_order_items (bỏ qua với case refund)
    ├──► Conflict resolver (không gọi tool, chọn timeline của case)
    ├──► Shipment agent ───────► get_shipment_summary
    ├──► Payment agent ────────► get_payment_timeline (+ get_refund_timeline nếu case refund)
@@ -25,8 +25,8 @@ Policy agent (policy_decided) ──handoff──► Verifier agent (verificatio
    └──────────────────────────── traces/trace.jsonl ◄───────────────────────────────┘
 ```
 
-Mỗi case dùng 6–7 MCP call (+`get_sellers` cho issue quy trách nhiệm seller), không gọi lặp (cache theo case), không gọi tool không cần thiết
-(`get_order_payments`, `get_product_context` được thay bằng dữ liệu đã có).
+Mỗi case dùng đúng 6 MCP call (case refund đổi `get_order_items` lấy `get_refund_timeline`), không gọi lặp (cache theo case), không gọi tool không cần thiết
+(`get_sellers`, `get_order_payments`, `get_product_context` được thay bằng dữ liệu đã có).
 
 ## 2. Agent ownership
 
@@ -34,7 +34,7 @@ Mỗi case dùng 6–7 MCP call (+`get_sellers` cho issue quy trách nhiệm sel
 | --- | --- | --- | --- | --- |
 | Coordinator | case JSON | Điều phối, giao task, gom kết quả | không gọi tool | `task_assigned` cho từng agent |
 | Entity/customer | claimed_order_id, candidates, customer hint | Resolve order, reject candidate sai, lấy lịch sử khách | `get_order`, `get_customer_history` | order đã resolve, rejected_candidates → coordinator |
-| Order/product | order_id | Lấy item, seller, shipping limit, giá/phí ship; xác minh danh tính seller khi issue quy trách nhiệm seller | `get_order_items`, `get_sellers` (chỉ với issue seller) | items, seller_ids → coordinator |
+| Order/product | order_id | Lấy item, seller, shipping limit, giá/phí ship | `get_order_items` (không gọi với case refund) | items, seller_ids → coordinator |
 | Conflict resolver | get_order row, history rows, items | Chọn bản ghi timeline đúng của case, gán event về bản ghi, ghi `data_conflicts` | không gọi tool | timeline đã chọn → shipment/payment |
 | Shipment | order_id, timeline | Xác định giao trễ và bên gây trễ (seller/logistics), timeline đầy đủ | `get_shipment_summary` | shipment verdict, late_seller_ids |
 | Payment/refund | order_id, timeline | Tổng capture, split vs duplicate, mismatch, trạng thái refund | `get_payment_timeline`, `get_refund_timeline` | payment verdict, totals |
@@ -75,7 +75,7 @@ Least privilege: mỗi agent chỉ gọi đúng tool của mình; Conflict resol
 | Source conflict | 0 | chọn timeline của case, ghi `data_conflicts` | `handoff / timeline_selected` hoặc `timeline_ambiguous` |
 | Invalid specialist result | 0 | output fallback an toàn, không bịa dữ liệu | `verification_completed / passed_with_warnings` |
 
-Query budget: 6 call/case (7 với case refund), cache trong phạm vi case, không quét rộng.
+Query budget: đúng 6 call/case, cache trong phạm vi case, không quét rộng.
 
 ## 6. Verification invariants
 
@@ -94,7 +94,7 @@ Query budget: 6 call/case (7 với case refund), cache trong phạm vi case, kh�
 
 ## 8. Tham khảo
 
-- Bảng chọn domain evidence theo từng loại issue (bổ sung domain `item` và `seller`) tham khảo ý tưởng
+- Bảng chọn domain evidence theo từng loại issue (bổ sung domain `item`) tham khảo ý tưởng
   từ repo L3A của nhóm <tên nhóm L3A>, đã được Lab Coach đồng ý. Không sử dụng submission, output,
   trace hay evidence_ref của nhóm khác.
 - Toàn bộ code L3B (entity resolution, customer context, conflict resolver, reconnect/resume,
